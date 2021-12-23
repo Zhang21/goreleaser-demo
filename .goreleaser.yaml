@@ -1,35 +1,42 @@
-# This is an example .goreleaser.yml file with some sensible defaults.
-# Make sure to check the documentation at https://goreleaser.com
+project_name: goreleaser-demo
 before:
   hooks:
-    # You may remove this if you don't use go modules.
+    - make clean
     - go mod tidy
-    # you may remove this if you don't need go generate
-    - go generate ./...
+env:
+  - CGO_ENABLED=0
+  - GO11MODULE=on
+  - GO111MODULE=on
+  - GOPROXY=https://goproxy.io
 builds:
-  - env:
-      - CGO_ENABLED=0
-      - GO11MODULE=on
-      - GO111MODULE=on
-      - GOPROXY=https://goproxy.io
+  - main: main.go
+    binary: goreleaser-demo
+    ldflags:
+      - -s -w
+      - -X main.Version=${{.Version}}
+      - -X main.Revision={{.FullCommit}}
+      - -X main.BuildUser=goreleaser
+      - -X main.BuildDate={{.Date}}
     goos:
       - linux
       - windows
-      - darwin
+    goarch:
+      - amd64
 archives:
-  - replacements:
-      darwin: Darwin
+  - id: archive-package
+    format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    replacements:
       linux: Linux
       windows: Windows
       386: i386
       amd64: x86_64
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - docs/*
 checksum:
   name_template: 'checksums.txt'
 snapshot:
-  name_template: "{{ incpatch .Version }}-next"
-changelog:
-  sort: asc
-  filters:
-    exclude:
-      - '^docs:'
-      - '^test:'
+  name_template: "{{ .Version }}_snapshot"
